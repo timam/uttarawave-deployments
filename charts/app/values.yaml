@@ -47,6 +47,7 @@ terminationGracePeriodSeconds: 30
 
 ingress:
   enabled: false
-  className: nginx
+  className: traefik
   host: ""
   path: /
+  tls: false

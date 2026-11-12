@@ -6,6 +6,11 @@ metadata:
   namespace: {{ .Values.namespace }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host }}
+  {{- end }}
   rules:
     - host: {{ .Values.ingress.host }}
       http:

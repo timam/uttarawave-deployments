@@ -42,4 +42,8 @@ app:
       memory: 256Mi
 
   ingress:
-    enabled: false
+    enabled: true
+    className: traefik
+    host: api.uttarawave.com
+    path: /
+    tls: true
