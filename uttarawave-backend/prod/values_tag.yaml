@@ -1,2 +1,3 @@
-image:
-  tag: replace-with-git-sha
+app:
+  image:
+    tag: ecbca61619c76783ba40a08ec77a9c6fbd178db0
