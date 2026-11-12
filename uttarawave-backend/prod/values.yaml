@@ -44,6 +44,6 @@ app:
   ingress:
     enabled: true
     className: traefik
-    host: api.uttarawave.com
+    host: be.uttarawave.com
     path: /
     tls: true
