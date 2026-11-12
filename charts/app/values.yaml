@@ -1,0 +1,52 @@
+name: ""
+namespace: default
+replicaCount: 1
+
+image:
+  repository: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+containerPort: 8080
+
+service:
+  type: ClusterIP
+  port: 8080
+
+config:
+  enabled: true
+  existingSecret: ""
+  key: server.yaml
+  mountPath: /app/internals/configs/server.yaml
+
+migration:
+  enabled: false
+  args:
+    - migrate
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+probes:
+  path: /healthz
+  liveness:
+    initialDelaySeconds: 20
+    periodSeconds: 10
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+
+terminationGracePeriodSeconds: 30
+
+ingress:
+  enabled: false
+  className: nginx
+  host: ""
+  path: /

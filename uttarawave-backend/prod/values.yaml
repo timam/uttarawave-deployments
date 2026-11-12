@@ -1,0 +1,44 @@
+name: prod-uttarawave-backend
+namespace: uttarawave
+replicaCount: 1
+
+image:
+  repository: ghcr.io/timam/uttarawave-backend
+  pullPolicy: Always
+
+containerPort: 8080
+
+service:
+  type: ClusterIP
+  port: 8080
+
+config:
+  enabled: true
+  existingSecret: prod-uttarawave-backend-config
+  key: server.yaml
+  mountPath: /app/internals/configs/server.yaml
+
+migration:
+  enabled: false
+  args:
+    - migrate
+
+probes:
+  path: /v1/healthz
+  liveness:
+    initialDelaySeconds: 20
+    periodSeconds: 10
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+ingress:
+  enabled: false
