@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: uttarawave-victoriametrics
+  namespace: monitoring
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: monitoring-uttarawave-victoriametrics@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - metrics.uttarawave.com
+  rules:
+    - host: metrics.uttarawave.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: uttarawave-victoriametrics
+                port:
+                  number: 8428
