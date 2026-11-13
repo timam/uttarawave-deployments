@@ -1,8 +1,8 @@
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: uttarawave-victoriametrics
+  name: victoriametrics
   namespace: monitoring
 spec:
   basicAuth:
-    secret: uttarawave-victoriametrics-auth
+    secret: victoriametrics-auth

@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: uttarawave-victoriametrics
+  name: victoriametrics
   namespace: monitoring
 spec:
   ports:
@@ -12,7 +12,7 @@ spec:
 apiVersion: v1
 kind: Endpoints
 metadata:
-  name: uttarawave-victoriametrics
+  name: victoriametrics
   namespace: monitoring
 subsets:
   - addresses:
