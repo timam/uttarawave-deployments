@@ -1,0 +1,13 @@
+name: uttarawave-traffic
+namespace: uttarawave
+
+image:
+  repository: ghcr.io/timam/uttarawave-backend
+  pullPolicy: Always
+
+config:
+  existingSecret: prod-uttarawave-backend-config
+  key: server.yaml
+  mountPath: /app/internals/configs/server.yaml
+
+terminationGracePeriodSeconds: 30
