@@ -20,7 +20,7 @@ app:
     mountPath: /app/internals/configs/server.yaml
 
   migration:
-    enabled: false
+    enabled: true
     args:
       - migrate
 
