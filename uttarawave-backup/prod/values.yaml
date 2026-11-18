@@ -4,8 +4,8 @@ namespace: uttarawave
 schedule: "0 1 * * *"
 timeZone: Asia/Dhaka
 concurrencyPolicy: Forbid
-successfulJobsHistoryLimit: 3
-failedJobsHistoryLimit: 5
+successfulJobsHistoryLimit: 1
+failedJobsHistoryLimit: 1
 backoffLimit: 1
 restartPolicy: Never
 activeDeadlineSeconds: 3600
