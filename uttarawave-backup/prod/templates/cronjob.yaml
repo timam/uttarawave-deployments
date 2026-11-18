@@ -88,7 +88,8 @@ spec:
                   }
                   STAMP="$(TZ={{ .Values.timeZone }} date +%d-%m-%Y-%H-%M-%S)"
                   echo "$STAMP" > /shared/stamp
-                  echo "dumping ${PGDATABASE}@${PGHOST}:${PGPORT} -> uttarawave-${STAMP}.dump"
+                  printf '%s' "$PGDATABASE" > /shared/dbname
+                  echo "dumping ${PGDATABASE}@${PGHOST}:${PGPORT} -> ${PGDATABASE}-${STAMP}.dump"
                   echo "--- pg_dump ---"
                   pg_dump --verbose -Fc -f /shared/backup.dump
                   ls -lh /shared/backup.dump
@@ -124,7 +125,8 @@ spec:
                   fi
                   ls -lh /shared/backup.dump
                   STAMP="$(cat /shared/stamp)"
-                  KEY="{{ .Values.s3.prefix }}/uttarawave-${STAMP}.dump"
+                  DBNAME="$(cat /shared/dbname)"
+                  KEY="{{ .Values.s3.prefix }}/${DBNAME}-${STAMP}.dump"
                   DEST="s3://{{ .Values.s3.bucket }}/${KEY}"
                   echo "AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-} AWS_ACCESS_KEY_ID set=$([ -n "${AWS_ACCESS_KEY_ID:-}" ] && echo yes || echo no)"
                   echo "uploading to ${DEST}"
