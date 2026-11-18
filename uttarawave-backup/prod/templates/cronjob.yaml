@@ -44,6 +44,7 @@ spec:
                       indb && /^[[:space:]]+postgres:[[:space:]]*$/ { inpg=1; next }
                       indb && inpg && $1 == key ":" {
                         sub(/^[^:]+:[[:space:]]*/, "", $0)
+                        gsub(/^[[:space:]]+|[[:space:]]+$/, "", $0)
                         print
                         exit
                       }
