@@ -15,12 +15,13 @@ spec:
     spec:
       backoffLimit: {{ .Values.backoffLimit }}
       activeDeadlineSeconds: {{ .Values.activeDeadlineSeconds }}
+      ttlSecondsAfterFinished: {{ .Values.ttlSecondsAfterFinished }}
       template:
         metadata:
           labels:
             app: {{ .Values.name }}
         spec:
-          restartPolicy: OnFailure
+          restartPolicy: {{ .Values.restartPolicy }}
           volumes:
             - name: server-yaml
               secret:
@@ -35,7 +36,15 @@ spec:
               args:
                 - |
                   set -eu
+                  trap 'echo "DUMP FAILED line=${LINENO} exit=$?" >&2' ERR
+                  echo "=== dump start $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
                   CONFIG=/config/server.yaml
+                  if [ ! -f "$CONFIG" ]; then
+                    echo "missing config file: $CONFIG" >&2
+                    ls -la /config >&2 || true
+                    exit 1
+                  fi
+                  echo "config file present: $(wc -c < "$CONFIG") bytes"
                   pg_field() {
                     key="$1"
                     awk -v key="$key" '
@@ -62,16 +71,28 @@ spec:
                     eval "val=\$$name"
                     if [ -z "$val" ]; then
                       echo "missing database.postgres value for $name" >&2
+                      echo "--- database section from config ---" >&2
+                      sed -n '/^database:/,/^[^[:space:]#]/p' "$CONFIG" >&2 || true
                       exit 1
                     fi
                   done
-                  printf '%s' "$PGPASSWORD" > /shared/PGPASSWORD
+                  echo "parsed host='${PGHOST}' host_len=$(printf '%s' "$PGHOST" | wc -c)"
+                  echo "parsed port='${PGPORT}' user='${PGUSER}' db='${PGDATABASE}' sslmode='${PGSSLMODE}'"
+                  echo "password_len=$(printf '%s' "$PGPASSWORD" | wc -c) (value not printed)"
                   export PGHOST PGPORT PGUSER PGPASSWORD PGDATABASE PGSSLMODE
+                  echo "--- pg_isready ---"
+                  pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -t 10 || {
+                    echo "pg_isready failed exit=$?" >&2
+                    echo "hint: from this pod, host must be reachable (not localhost of the node unless routed)" >&2
+                    exit 1
+                  }
                   STAMP="$(TZ={{ .Values.timeZone }} date +%d-%m-%Y-%H-%M-%S)"
                   echo "$STAMP" > /shared/stamp
-                  echo "dumping ${PGDATABASE}@${PGHOST} -> uttarawave-${STAMP}.dump"
-                  pg_dump -Fc -f /shared/backup.dump
+                  echo "dumping ${PGDATABASE}@${PGHOST}:${PGPORT} -> uttarawave-${STAMP}.dump"
+                  echo "--- pg_dump ---"
+                  pg_dump --verbose -Fc -f /shared/backup.dump
                   ls -lh /shared/backup.dump
+                  echo "=== dump ok ==="
               volumeMounts:
                 - name: server-yaml
                   mountPath: /config/server.yaml
@@ -89,13 +110,28 @@ spec:
               args:
                 - |
                   set -eu
+                  trap 'echo "UPLOAD FAILED line=${LINENO} exit=$?" >&2' ERR
+                  echo "=== upload start $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+                  if [ ! -f /shared/stamp ]; then
+                    echo "missing /shared/stamp — dump init did not finish" >&2
+                    ls -la /shared >&2 || true
+                    exit 1
+                  fi
+                  if [ ! -f /shared/backup.dump ]; then
+                    echo "missing /shared/backup.dump" >&2
+                    ls -la /shared >&2 || true
+                    exit 1
+                  fi
+                  ls -lh /shared/backup.dump
                   STAMP="$(cat /shared/stamp)"
                   KEY="{{ .Values.s3.prefix }}/uttarawave-${STAMP}.dump"
                   DEST="s3://{{ .Values.s3.bucket }}/${KEY}"
+                  echo "AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-} AWS_ACCESS_KEY_ID set=$([ -n "${AWS_ACCESS_KEY_ID:-}" ] && echo yes || echo no)"
                   echo "uploading to ${DEST}"
                   aws s3 cp /shared/backup.dump "$DEST" --region "{{ .Values.s3.region }}"
                   echo "upload complete"
-                  rm -f /shared/backup.dump /shared/PGPASSWORD
+                  rm -f /shared/backup.dump
+                  echo "=== upload ok ==="
               envFrom:
                 - secretRef:
                     name: {{ .Values.awsSecret.existingSecret }}

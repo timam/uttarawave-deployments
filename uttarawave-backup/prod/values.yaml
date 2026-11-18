@@ -5,9 +5,11 @@ schedule: "*/5 * * * *"
 timeZone: Asia/Dhaka
 concurrencyPolicy: Forbid
 successfulJobsHistoryLimit: 3
-failedJobsHistoryLimit: 3
-backoffLimit: 2
+failedJobsHistoryLimit: 5
+backoffLimit: 1
+restartPolicy: Never
 activeDeadlineSeconds: 3600
+ttlSecondsAfterFinished: 86400
 
 images:
   postgres:
