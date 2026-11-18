@@ -1,4 +1,4 @@
-name: uttarawave-backup
+name: prod-uttarawave-backup
 namespace: uttarawave
 
 schedule: "*/5 * * * *"
