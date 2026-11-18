@@ -1,0 +1,5 @@
+apiVersion: v2
+name: uttarawave-backup
+description: Nightly Postgres dump to S3 for uttarawave
+type: application
+version: 1.0.0

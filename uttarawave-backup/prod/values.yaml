@@ -1,0 +1,48 @@
+name: uttarawave-backup
+namespace: uttarawave
+
+schedule: "0 2 * * *"
+timeZone: Asia/Dhaka
+concurrencyPolicy: Forbid
+successfulJobsHistoryLimit: 3
+failedJobsHistoryLimit: 3
+backoffLimit: 2
+activeDeadlineSeconds: 3600
+
+images:
+  postgres:
+    repository: public.ecr.aws/docker/library/postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+  aws:
+    repository: public.ecr.aws/aws-cli/aws-cli
+    tag: "2.15.57"
+    pullPolicy: IfNotPresent
+
+config:
+  existingSecret: prod-uttarawave-backend-config
+  key: server.yaml
+
+awsSecret:
+  existingSecret: uttarawave-db-backup-aws
+
+s3:
+  bucket: uttarawave.com
+  prefix: backups/db
+  region: us-west-2
+
+resources:
+  dump:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  upload:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

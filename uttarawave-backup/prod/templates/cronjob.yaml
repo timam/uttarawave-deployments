@@ -1,0 +1,105 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.name }}
+spec:
+  schedule: {{ .Values.schedule | quote }}
+  timeZone: {{ .Values.timeZone | quote }}
+  concurrencyPolicy: {{ .Values.concurrencyPolicy }}
+  successfulJobsHistoryLimit: {{ .Values.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.backoffLimit }}
+      activeDeadlineSeconds: {{ .Values.activeDeadlineSeconds }}
+      template:
+        metadata:
+          labels:
+            app: {{ .Values.name }}
+        spec:
+          restartPolicy: OnFailure
+          volumes:
+            - name: server-yaml
+              secret:
+                secretName: {{ .Values.config.existingSecret }}
+            - name: shared
+              emptyDir: {}
+          initContainers:
+            - name: dump
+              image: "{{ .Values.images.postgres.repository }}:{{ .Values.images.postgres.tag }}"
+              imagePullPolicy: {{ .Values.images.postgres.pullPolicy }}
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  CONFIG=/config/server.yaml
+                  pg_field() {
+                    key="$1"
+                    awk -v key="$key" '
+                      /^database:[[:space:]]*$/ { indb=1; next }
+                      indb && /^[^[:space:]#]/ { indb=0; inpg=0 }
+                      indb && /^[[:space:]]+postgres:[[:space:]]*$/ { inpg=1; next }
+                      indb && inpg && $1 == key ":" {
+                        sub(/^[^:]+:[[:space:]]*/, "", $0)
+                        print
+                        exit
+                      }
+                    ' "$CONFIG"
+                  }
+                  PGHOST="$(pg_field host)"
+                  PGPORT="$(pg_field port)"
+                  PGUSER="$(pg_field user)"
+                  PGPASSWORD="$(pg_field password)"
+                  PGDATABASE="$(pg_field dbname)"
+                  PGSSLMODE="$(pg_field sslmode)"
+                  [ -n "$PGPORT" ] || PGPORT=5432
+                  [ -n "$PGSSLMODE" ] || PGSSLMODE=prefer
+                  for name in PGHOST PGPORT PGUSER PGPASSWORD PGDATABASE; do
+                    eval "val=\$$name"
+                    if [ -z "$val" ]; then
+                      echo "missing database.postgres value for $name" >&2
+                      exit 1
+                    fi
+                  done
+                  printf '%s' "$PGPASSWORD" > /shared/PGPASSWORD
+                  export PGHOST PGPORT PGUSER PGPASSWORD PGDATABASE PGSSLMODE
+                  STAMP="$(TZ={{ .Values.timeZone }} date +%d-%m-%Y-%H-%M-%S)"
+                  echo "$STAMP" > /shared/stamp
+                  echo "dumping ${PGDATABASE}@${PGHOST} -> uttarawave-${STAMP}.dump"
+                  pg_dump -Fc -f /shared/backup.dump
+                  ls -lh /shared/backup.dump
+              volumeMounts:
+                - name: server-yaml
+                  mountPath: /config/server.yaml
+                  subPath: {{ .Values.config.key }}
+                  readOnly: true
+                - name: shared
+                  mountPath: /shared
+              resources:
+                {{- toYaml .Values.resources.dump | nindent 16 }}
+          containers:
+            - name: upload
+              image: "{{ .Values.images.aws.repository }}:{{ .Values.images.aws.tag }}"
+              imagePullPolicy: {{ .Values.images.aws.pullPolicy }}
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  STAMP="$(cat /shared/stamp)"
+                  KEY="{{ .Values.s3.prefix }}/uttarawave-${STAMP}.dump"
+                  DEST="s3://{{ .Values.s3.bucket }}/${KEY}"
+                  echo "uploading to ${DEST}"
+                  aws s3 cp /shared/backup.dump "$DEST" --region "{{ .Values.s3.region }}"
+                  echo "upload complete"
+                  rm -f /shared/backup.dump /shared/PGPASSWORD
+              envFrom:
+                - secretRef:
+                    name: {{ .Values.awsSecret.existingSecret }}
+              volumeMounts:
+                - name: shared
+                  mountPath: /shared
+              resources:
+                {{- toYaml .Values.resources.upload | nindent 16 }}
