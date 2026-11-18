@@ -1,7 +1,7 @@
 name: prod-uttarawave-backup
 namespace: uttarawave
 
-schedule: "*/5 * * * *"
+schedule: "0 1 * * *"
 timeZone: Asia/Dhaka
 concurrencyPolicy: Forbid
 successfulJobsHistoryLimit: 3
