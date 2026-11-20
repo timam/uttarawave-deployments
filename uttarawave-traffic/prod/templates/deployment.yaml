@@ -22,7 +22,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - cron
-            - --pppoe-usage
+            - --traffic
             - --interval
             - 1s
           env:
