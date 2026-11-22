@@ -62,7 +62,7 @@ scan the QR code from the phone: WhatsApp → Linked devices → Link a device.
 Check:
 
 ```sh
-curl -u 'gowa:<password>' https://wa.uttarawave.com/app/status
+curl -u '<username>:<password>' https://wa.uttarawave.com/app/status
 ```
 
 Open WhatsApp on that phone at least every couple of weeks; WhatsApp unlinks devices whose main
@@ -73,7 +73,7 @@ phone stays inactive too long, and the QR scan must then be repeated.
 In-cluster URL: `http://uttarawave-whatsapp.uttarawave:3000`
 
 ```sh
-curl -u 'gowa:<password>' -X POST http://uttarawave-whatsapp.uttarawave:3000/send/message \
+curl -u '<username>:<password>' -X POST http://uttarawave-whatsapp.uttarawave:3000/send/message \
   -H 'Content-Type: application/json' \
   -d '{"phone":"8801XXXXXXXXX@s.whatsapp.net","message":"Hello"}'
 ```
