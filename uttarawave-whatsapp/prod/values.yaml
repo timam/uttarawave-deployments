@@ -16,6 +16,9 @@ env:
   TZ: Asia/Dhaka
   APP_OS: UttaraWave
   MCP_ENABLED: "false"
+  # Incoming messages (START/STOP) go to the backend inside the cluster.
+  WHATSAPP_WEBHOOK: http://prod-uttarawave-backend.uttarawave:8080/v1/whatsapp/webhook
+  WHATSAPP_WEBHOOK_EVENTS: message
 
 # Holds the WhatsApp session (SQLite). Losing it means re-scanning the QR code.
 persistence:
