@@ -1,0 +1,42 @@
+name: uttarawave-whatsapp
+namespace: uttarawave
+
+image:
+  repository: aldinokemal2104/go-whatsapp-web-multidevice
+  pullPolicy: IfNotPresent
+
+containerPort: 3000
+
+# Created by hand, see README.md. Holds APP_BASIC_AUTH and WHATSAPP_WEBHOOK_SECRET.
+envSecret:
+  existingSecret: uttarawave-whatsapp-env
+
+# Non-secret GOWA settings.
+env:
+  TZ: Asia/Dhaka
+  APP_OS: UttaraWave
+  MCP_ENABLED: "false"
+
+# Holds the WhatsApp session (SQLite). Losing it means re-scanning the QR code.
+persistence:
+  size: 1Gi
+  storageClassName: ""   # empty = cluster default
+  mountPath: /app/storages
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+terminationGracePeriodSeconds: 30
+
+# Public dashboard/API. Protected only by APP_BASIC_AUTH.
+ingress:
+  enabled: true
+  className: traefik
+  host: wa.uttarawave.com
+  path: /
+  tls: true
